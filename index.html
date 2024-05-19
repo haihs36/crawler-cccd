@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import CCCD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        #loading {
+            display: none;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Import CCCD</h1>
+    <form id="importForm" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput">
+        <button type="submit">Import</button>
+    </form>
+    <br>
+    <br>
+    <br>
+    <div id="loading">
+        <i class="fas fa-spinner fa-spin"></i> Đang tải...
+    </div>
+    <div id="result">
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>CCCD</th>
+                    <th>Mã Số Thuế</th>
+                    <th>Tên Người Nộp Thuế</th>
+                    <th>Cơ Quan Thuế</th>
+                    <th>Số CMT</th>
+                    <th>Ngày Thay Đổi Thông Tin</th>
+                    <th>Ghi Chú</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+<p><a id="downloadLink" class="hidden" href="/download-results" download="results.xlsx">Download Results</a>
+</p>
+
+    <script>
+        document.getElementById('importForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('fileInput').files[0]);
+
+            const loadingElement = document.getElementById('loading');
+            const resultTableBody = document.getElementById('resultTable').getElementsByTagName('tbody')[0];
+            resultTableBody.innerHTML = ''; // Clear previous results
+            loadingElement.style.display = 'block'; // Show loading icon
+
+            try {
+                const response = await fetch('/import', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const results = await response.json();
+                    loadingElement.style.display = 'none'; // Hide loading icon
+
+                    results.forEach((data, index) => {
+                        if (data.result.length === 0) {
+                            // Nếu result trống, thêm một hàng với thông tin CCCD và thông báo không có kết quả
+                            const row = resultTableBody.insertRow();
+                            row.insertCell(0).textContent = index + 1;
+                            row.insertCell(1).textContent = data.cccd;
+                            row.insertCell(2).textContent = '';
+                            row.insertCell(3).textContent = '';
+                            row.insertCell(4).textContent = '';
+                            row.insertCell(5).textContent = '';
+                            row.insertCell(6).textContent = '';
+                            row.insertCell(7).textContent = 'Không có kết quả';
+                        } else {
+                            // Nếu result có dữ liệu, thêm mỗi mục trong result vào một hàng
+                            data.result.forEach((resultItem, resultIndex) => {
+                                const row = resultTableBody.insertRow();
+                                row.insertCell(0).textContent = `${index + 1}.${resultIndex + 1}`;
+                                row.insertCell(1).textContent = data.cccd;
+                                row.insertCell(2).textContent = resultItem.MaSoThue;
+                                row.insertCell(3).textContent = resultItem.TenNguoiNopThue;
+                                row.insertCell(4).textContent = resultItem.CoQuanThue;
+                                row.insertCell(5).textContent = resultItem.SoCMT;
+                                row.insertCell(6).textContent = resultItem.NgayThayDoiThongTin;
+                                row.insertCell(7).textContent = resultItem.GhiChu;
+                            });
+                        }
+                    });
+                } else {
+                    console.error('Yêu cầu không thành công:', response.status);
+                    loadingElement.style.display = 'none'; // Hide loading icon
+                    document.getElementById('result').textContent = `Yêu cầu không thành công: ${response.status}`;
+                }
+            } catch (error) {
+                console.error('Lỗi khi gửi yêu cầu:', error);
+                loadingElement.style.display = 'none'; // Hide loading icon
+                document.getElementById('result').textContent = 'Lỗi khi gửi yêu cầu: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
