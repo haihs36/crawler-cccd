@@ -8,7 +8,7 @@ const xlsx = require("xlsx");
 const fs = require("fs");
 
 const app = express();
-const port = 3000;
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -117,6 +117,7 @@ app.get("/download-results", (req, res) => {
   res.download(filePath);
 });
 
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Máy chủ đã khởi động tại http://localhost:${port}`);
 });
